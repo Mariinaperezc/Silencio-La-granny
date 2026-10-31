@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#090b0d">
+<title>La Casa del Silencio</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050607;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f4f0e8;touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;background:#080a0c}
+#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 28%,rgba(0,0,0,.45) 100%);z-index:2}
+#hud{position:fixed;inset:0;z-index:4;pointer-events:none}
+#top{position:absolute;top:env(safe-area-inset-top,10px);left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:12px 14px;gap:8px}
+.pill{background:#090d10c9;border:1px solid #ffffff26;border-radius:12px;padding:8px 11px;font-size:12px;letter-spacing:.04em;backdrop-filter:blur(6px)}
+#objective{max-width:58%;line-height:1.35}
+#status{min-width:90px;text-align:right}
+#message{position:absolute;top:22%;left:50%;transform:translateX(-50%);text-align:center;background:#080a0ddd;border:1px solid #ffffff2c;border-radius:12px;padding:10px 15px;max-width:85%;font-size:14px;opacity:0;transition:opacity .2s}
+#cross{position:absolute;left:50%;top:50%;width:10px;height:10px;transform:translate(-50%,-50%);opacity:.6}
+#cross:before,#cross:after{content:"";position:absolute;background:#fff}#cross:before{width:10px;height:1px;top:4px}#cross:after{height:10px;width:1px;left:4px}
+#controls{position:fixed;inset:0;z-index:5;pointer-events:none}
+#joy{position:absolute;left:18px;bottom:calc(22px + env(safe-area-inset-bottom,0px));width:124px;height:124px;border-radius:50%;border:1px solid #ffffff55;background:#10182066;pointer-events:auto;touch-action:none}
+#knob{position:absolute;width:48px;height:48px;border-radius:50%;left:37px;top:37px;background:#d7d1c1aa;border:1px solid #fff9;box-shadow:0 2px 14px #0008}
+#lookzone{position:absolute;right:0;top:18%;width:58%;height:58%;pointer-events:auto;touch-action:none}
+#buttons{position:absolute;right:14px;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(2,66px);gap:9px;pointer-events:auto}
+.ctrl{width:66px;height:58px;border-radius:15px;border:1px solid #ffffff55;background:#111a20cc;color:white;font-weight:700;font-size:11px;letter-spacing:.04em;touch-action:none}
+.ctrl:active{background:#704b43}
+#start,#end{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(#050607bb,#050607ee),radial-gradient(ellipse at 50% 35%,#4c3930,#08090a 70%)}
+.panel{width:min(470px,100%);padding:26px 22px;border:1px solid #ffffff2c;border-radius:20px;background:#0b0f12ed;box-shadow:0 20px 70px #000b;text-align:center}
+h1{font-family:Georgia,serif;font-weight:500;letter-spacing:.08em;font-size:clamp(27px,7vw,42px);margin:0 0 8px;color:#e8dfce}
+.sub{color:#b7b4ad;font-size:14px;line-height:1.5;margin:0 auto 20px;max-width:360px}
+.primary{border:0;border-radius:12px;background:#a74738;color:white;padding:14px 24px;font-size:15px;font-weight:800;letter-spacing:.08em;width:100%;min-height:50px}
+.small{color:#8d9295;font-size:12px;line-height:1.5;margin-top:15px}
+#end{display:none}
+@media (min-width:800px){#joy{width:140px;height:140px}#knob{left:45px;top:45px}#buttons{grid-template-columns:repeat(2,76px)}.ctrl{width:76px;height:64px;font-size:12px}#lookzone{width:62%;height:75%;top:10%}}
+@media (orientation:landscape) and (max-height:500px){#joy{width:94px;height:94px;bottom:12px;left:12px}#knob{width:40px;height:40px;left:26px;top:26px}#buttons{bottom:10px;right:10px;grid-template-columns:repeat(2,60px);gap:6px}.ctrl{width:60px;height:48px}#top{padding:7px 10px}.pill{padding:6px 8px}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas><div id="vignette"></div>
+<div id="hud">
+ <div id="top"><div class="pill" id="objective">OBJETIVO · Encuentra la llave y escapa.</div><div class="pill" id="status">VIDA ♥ ♥ ♥<br>RUIDO ▰▰▱</div></div>
+ <div id="message"></div><div id="cross"></div>
+</div>
+<div id="controls">
+ <div id="joy"><div id="knob"></div></div><div id="lookzone"></div>
+ <div id="buttons">
+  <button class="ctrl" id="run">CORRER</button><button class="ctrl" id="use">USAR</button>
+  <button class="ctrl" id="hide">ESCONDER</button><button class="ctrl" id="lamp">LINTERNA</button>
+ </div>
+</div>
+<div id="start"><div class="panel"><h1>LA CASA DEL<br>SILENCIO</h1><p class="sub">Alguien vive en esta casa. No quiere que salgas. Encuentra la llave de la puerta principal, evita hacer ruido y escóndete cuando se acerque.</p><button class="primary" id="play">ENTRAR EN LA CASA</button><div class="small">MÓVIL / TABLET · Joystick para moverte · Arrastra la zona derecha para mirar<br>Usa los botones para correr, esconderte e interactuar.</div></div></div>
+<div id="end"><div class="panel"><h1 id="endtitle">TE HA ENCONTRADO</h1><p class="sub" id="endtext">La casa vuelve a quedarse en silencio...</p><button class="primary" id="again">VOLVER A INTENTARLO</button></div></div>
+<script>
+(()=>{
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+let W=0,H=0,playing=false,last=0,frame=0,showUntil=0,hidden=false,won=false,dead=false;
+const map=[
+"################",
+"#......#.......#",
+"#......#.......#",
+"#..............#",
+"#..##.....##...#",
+"#..#......#....#",
+"#..#......#....#",
+"#..............#",
+"###.####..####.#",
+"#..............#",
+"#....##........#",
+"#....##........#",
+"#..............#",
+"#..............#",
+"#..............#",
+"################"
+];
+const MW=map[0].length,MH=map.length;
+const walls=(x,y)=>{let a=Math.floor(x),b=Math.floor(y);return a<0||b<0||a>=MW||b>=MH||map[b][a]==='#'};
+const player={x:2.5,y:2.5,a:0,hp:3,noise:0,hasKey:false,hasFuse:false,hasPliers:false,flash:true};
+const enemy={x:12.5,y:12.5,a:0,mode:'patrol',speed:0.72,alert:0,stun:0,path:0};
+const items=[{x:13.5,y:2.5,t:'key',got:false,label:'LLAVE'},{x:2.5,y:12.5,t:'fuse',got:false,label:'FUSIBLE'},{x:8.5,y:7.5,t:'pliers',got:false,label:'ALICATES'}];
+const door={x:8.5,y:14.45};
+let joy={x:0,y:0,id:null},look={id:null,x:0,y:0},keys={};
+let run=false,action=false,hideBtn=false;
+const FOV=Math.PI/2.9,MAX=18;
+function resize(){W=canvas.width=Math.max(1,innerWidth*devicePixelRatio);H=canvas.height=Math.max(1,innerHeight*devicePixelRatio);ctx.setTransform(1,0,0,1,0,0)}
+addEventListener('resize',resize);resize();
+function say(t,ms=2200){$('message').textContent=t;$('message').style.opacity=1;showUntil=performance.now()+ms}
+function updateHUD(){
+ let got=items.filter(i=>i.got).length;
+ $('objective').textContent=player.hasKey?'OBJETIVO · ¡La llave! Encuentra la salida.':`OBJETIVO · Busca la llave (${got}/3 objetos)`;
+ $('status').innerHTML='VIDA '+('♥ '.repeat(player.hp))+'<br>RUIDO '+(player.noise>0.6?'▰▰▰':player.noise>0.25?'▰▰▱':'▰▱▱')+(hidden?'<br>OCULTO':'');
+}
+function ray(angle){
+ let s=Math.sin(angle),c=Math.cos(angle),d=0.02;
+ while(d<MAX&&!walls(player.x+c*d,player.y+s*d))d+=0.025;
+ return d;
+}
+function render(){
+ const sky=ctx.createLinearGradient(0,0,0,H*.55);sky.addColorStop(0,'#090d12');sky.addColorStop(1,'#29221e');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.52);
+ const floor=ctx.createLinearGradient(0,H*.48,0,H);floor.addColorStop(0,'#211d1a');floor.addColorStop(1,'#050607');ctx.fillStyle=floor;ctx.fillRect(0,H*.48,W,H*.52);
+ const cols=Math.ceil(W/3),cw=W/cols;
+ for(let i=0;i<cols;i++){
+  let a=player.a+(i/cols-.5)*FOV,d=ray(a),correct=d*Math.cos(a-player.a),wh=Math.min(H*1.6,H/(correct*.72)),top=H/2-wh/2;
+  let shade=Math.max(18,160/(1+correct*.42));let stripe=(Math.floor(i/7)%2)*5;
+  ctx.fillStyle=`rgb(${Math.max(0,shade*.75-stripe)},${Math.max(0,shade*.72-stripe)},${Math.max(0,shade*.68-stripe)})`;ctx.fillRect(i*cw,top,cw+1,wh);
+  if(correct<2.2){ctx.fillStyle='#08090a';ctx.fillRect(i*cw,top,cw+1,wh)}
+  ctx.fillStyle='rgba(0,0,0,.15)';ctx.fillRect(i*cw,top,cw+1,wh);
+ }
+ // Objects are projected as simple 3D sprites, far to near
+ let sprites=[];
+ items.filter(i=>!i.got).forEach(i=>sprites.push({...i,kind:'item'}));
+ sprites.push({...door,kind:'door'});
+ if(!hidden)sprites.push({...enemy,kind:'enemy'});
+ sprites.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
+ for(const s of sprites){
+  let dx=s.x-player.x,dy=s.y-player.y,dist=Math.hypot(dx,dy),ang=Math.atan2(dy,dx)-player.a;
+  while(ang>Math.PI)ang-=Math.PI*2;while(ang< -Math.PI)ang+=Math.PI*2;
+  if(Math.abs(ang)>FOV*.62||dist<.2)continue;
+  let sx=W*(.5+ang/FOV),size=Math.min(H*.85,H/(dist*.8)),sy=H/2+size*.18;
+  if(s.kind==='enemy'){
+   let visible=player.flash||dist<2.8;ctx.globalAlpha=visible?Math.max(.25,1-dist/24):.2;
+   ctx.fillStyle='#171719';ctx.beginPath();ctx.ellipse(sx,sy-size*.24,size*.22,size*.36,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#b9a18b';ctx.beginPath();ctx.arc(sx,sy-size*.55,size*.14,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#9c1c16';ctx.fillRect(sx-size*.085,sy-size*.59,size*.05,size*.025);ctx.fillRect(sx+size*.035,sy-size*.59,size*.05,size*.025);
+   ctx.fillStyle='#0b0b0c';ctx.fillRect(sx-size*.22,sy+size*.05,size*.13,size*.34);ctx.fillRect(sx+size*.09,sy+size*.05,size*.13,size*.34);ctx.globalAlpha=1;
+  }else if(s.kind==='item'){
+   ctx.fillStyle=s.t==='key'?'#e3c36a':s.t==='fuse'?'#9ad8dc':'#b9b9b9';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=18;
+   ctx.beginPath();ctx.arc(sx,sy-size*.25,Math.max(4,size*.075),0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  }else{
+   ctx.fillStyle='#3b2119';ctx.fillRect(sx-size*.25,sy-size*.72,size*.5,size*.72);ctx.fillStyle='#8d6b4d';ctx.fillRect(sx-size*.19,sy-size*.66,size*.38,size*.62);
+   ctx.fillStyle='#21130f';ctx.fillRect(sx-size*.04,sy-size*.36,size*.08,size*.04);
+  }
+ }
+ // flashlight cone overlay
+ if(player.flash&&!hidden){let g=ctx.createRadialGradient(W/2,H*.53,10,W/2,H*.53,H*.62);g.addColorStop(0,'rgba(235,218,174,.11)');g.addColorStop(.5,'rgba(210,195,160,.035)');g.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+ // noise pulse
+ if(enemy.alert>0){ctx.fillStyle=`rgba(120,0,0,${Math.min(.12,enemy.alert*.025)})`;ctx.fillRect(0,0,W,H)}
+}
+function canMove(x,y){return !walls(x-.18,y-.18)&&!walls(x+.18,y-.18)&&!walls(x-.18,y+.18)&&!walls(x+.18,y+.18)}
+function moveEntity(e,dx,dy){if(canMove(e.x+dx,e.y))e.x+=dx;if(canMove(e.x,e.y+dy))e.y+=dy}
+function nearestItem(){let best=null,bd=1.4;for(const i of items){let d=Math.hypot(i.x-player.x,i.y-player.y);if(!i.got&&d<bd){best=i;bd=d}}return best}
+function use(){
+ if(!playing)return;
+ let it=nearestItem();
+ if(it){it.got=true;if(it.t==='key')player.hasKey=true;if(it.t==='fuse')player.hasFuse=true;if(it.t==='pliers')player.hasPliers=true;say('Has recogido: '+it.label);updateHUD();return}
+ let d=Math.hypot(door.x-player.x,door.y-player.y);
+ if(d<2.2){if(player.hasKey){finish(true)}else say('La puerta está cerrada. Necesitas la llave.');return}
+ if(Math.hypot(enemy.x-player.x,enemy.y-player.y)<1.8&&enemy.stun<=0)say('¡Aléjate de ella!');
+ else say('No hay nada que puedas usar aquí.',1200);
+}
+function toggleHide(){if(!playing)return;if(hidden){hidden=false;say('Has salido del escondite.')}else{if(Math.hypot(enemy.x-player.x,enemy.y-player.y)<2.5){say('¡Demasiado cerca!');return}hidden=true;player.noise=0;say('Te has escondido. No te muevas.')}updateHUD()}
+function finish(win){playing=false;won=win;$('end').style.display='flex';$('endtitle').textContent=win?'HAS ESCAPADO':'TE HA ENCONTRADO';$('endtext').textContent=win?'Has conseguido salir de la casa. Por ahora.':'La casa vuelve a quedarse en silencio… ¿Te atreves a intentarlo otra vez?'}
+function step(dt){
+ if(!playing)return;
+ const forward=-(joy.y||0)-(keys.KeyW?1:0)+(keys.KeyS?1:0),side=(joy.x||0)+(keys.KeyD?1:0)-(keys.KeyA?1:0);
+ const moving=Math.abs(forward)+Math.abs(side)>.08;
+ const sprint=run||keys.ShiftLeft||keys.ShiftRight,speed=(sprint?2.8:1.75)*dt;
+ if(!hidden&&moving){let fx=Math.cos(player.a),fy=Math.sin(player.a),rx=-fy,ry=fx;moveEntity(player,(fx*forward+rx*side)*speed,(fy*forward+ry*side)*speed);player.noise=Math.min(1,player.noise+dt*(sprint?1.15:.42))}
+ else player.noise=Math.max(0,player.noise-dt*.8);
+ if(keys.ArrowLeft)player.a-=dt*1.7;if(keys.ArrowRight)player.a+=dt*1.7;
+ // enemy tracks sound and proximity; patrols around the house
+ let dist=Math.hypot(player.x-enemy.x,player.y-enemy.y);
+ if(!hidden&&(dist<6||player.noise>.3)){enemy.mode='hunt';enemy.alert=Math.min(3,enemy.alert+dt*1.5)}
+ else{enemy.alert=Math.max(0,enemy.alert-dt);if(enemy.alert===0)enemy.mode='patrol'}
+ let targetA=enemy.mode==='hunt'?Math.atan2(player.y-enemy.y,player.x-enemy.x):Math.atan2(13.5-enemy.y,13.5-enemy.x);
+ let da=Math.atan2(Math.sin(targetA-enemy.a),Math.cos(targetA-enemy.a));enemy.a+=Math.max(-dt*2,Math.min(dt*2,da));
+ let es=(enemy.mode==='hunt'?1.12:.48)*dt;
+ if(enemy.stun>0)enemy.stun-=dt;else if(enemy.mode==='hunt'&& !hidden){moveEntity(enemy,Math.cos(enemy.a)*es,Math.sin(enemy.a)*es)}
+ else if(enemy.mode==='patrol'){moveEntity(enemy,Math.cos(enemy.a)*es,Math.sin(enemy.a)*es);enemy.path+=dt;if(enemy.path>4){enemy.path=0;enemy.a+=1.7}}
+ if(dist<.62&&!hidden){player.hp--;player.x=2.5;player.y=2.5;player.a=0;enemy.x=12.5;enemy.y=12.5;enemy.alert=0;hidden=false;say(player.hp>0?'Te ha golpeado. ¡Vuelve a esconderte!':'');if(player.hp<=0)finish(false);updateHUD()}
+ updateHUD();
+}
+function loop(t){let dt=Math.min(.04,(t-last)/1000||0);last=t;if(playing){step(dt);render();if(t>showUntil)$('message').style.opacity=0}requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+$('play').addEventListener('click',()=>{$('start').style.display='none';playing=true;last=performance.now();say('Busca objetos. Escucha sus pasos.');updateHUD()});
+$('again').addEventListener('click',()=>location.reload());
+$('use').addEventListener('pointerdown',e=>{e.preventDefault();use()});
+$('hide').addEventListener('pointerdown',e=>{e.preventDefault();toggleHide()});
+$('lamp').addEventListener('pointerdown',e=>{e.preventDefault();player.flash=!player.flash;say(player.flash?'Linterna encendida':'Linterna apagada',1000)});
+$('run').addEventListener('pointerdown',e=>{e.preventDefault();run=true});['pointerup','pointercancel','pointerleave'].forEach(ev=>$('run').addEventListener(ev,()=>run=false));
+const joyEl=$('joy'),knob=$('knob');
+joyEl.addEventListener('pointerdown',e=>{joy.id=e.pointerId;joyEl.setPointerCapture(e.pointerId);joy.x=joy.y=0;joyMove(e)});
+joyEl.addEventListener('pointermove',e=>{if(e.pointerId===joy.id)joyMove(e)});
+function joyMove(e){let r=joyEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,len=Math.hypot(dx,dy);if(len>max){dx=dx/len*max;dy=dy/len*max}joy.x=dx/max;joy.y=dy/max;knob.style.transform=`translate(${dx}px,${dy}px)`}
+function joyEnd(e){if(e.pointerId!==joy.id)return;joy.id=null;joy.x=joy.y=0;knob.style.transform='translate(0,0)'}
+joyEl.addEventListener('pointerup',joyEnd);joyEl.addEventListener('pointercancel',joyEnd);
+const lookEl=$('lookzone');lookEl.addEventListener('pointerdown',e=>{look.id=e.pointerId;look.x=e.clientX;lookEl.setPointerCapture(e.pointerId)});
+lookEl.addEventListener('pointermove',e=>{if(e.pointerId!==look.id)return;let dx=e.clientX-look.x;look.x=e.clientX;player.a+=dx*.0065});
+['pointerup','pointercancel'].forEach(ev=>lookEl.addEventListener(ev,e=>{if(e.pointerId===look.id)look.id=null}));
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')use();if(e.code==='KeyF')player.flash=!player.flash;if(e.code==='KeyC')toggleHide()});
+addEventListener('keyup',e=>keys[e.code]=false);
+})();
+</script>
+</body></html>
